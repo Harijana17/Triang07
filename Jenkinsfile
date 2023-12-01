@@ -1,42 +1,40 @@
-pipeline {
+pipeline{
     agent any
 
-    stages {
-        stage('Checking github') {
-            steps {
-                // Get some code from a GitHub repository
-                git credentialsId: 'git_credentials', url: 'https://github.com/safaa-09/Triang07.git'
-
-            }
-        }
-        
-        stage('Building'){
+    tools {
+        maven 'maven-3'
+    }
+    stages{
+        stage('git checkout'){
             steps{
-             // Run Maven on a Unix agent.
-                echo "Je suis sur la branche Master"
-                sh 'mvn compile'
+                git 'https://github.com/Harijana17/Triang07.git'
             }
-                // To run Maven on a Windows agent, use
-                // bat "mvn -Dmaven.test.failure.ignore=true clean package"
         }
-     
+        stage('Build the app'){
+            steps{
+                sh 'mvn clean install'
+            }
+        }
+        stage('Unit Test Execution'){
+            steps{
+                sh 'mvn test'
+            }
+        }
+        stage('build the docker image'){
+            steps{
+                script {
+                    sh 'docker build -t triang7:1.0.0 .'
+                }
+            }
+        }
+        stage('push the docker image') {
+            steps{
+                withCredentials([usernamePassword(credentialsId: 'dockerhubpass', usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                    script {
+                        sh "docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD"
+                    }
+                }
+            }
+        }
     }
-    
-    post{
-        
-        always{
-            echo 'ce message devra toujours s\'afficher'
-        }
-        
-        success{
-            echo 'ce message s\'affichera en cas de succès'
-            
-        }
-        
-        failure{
-            
-            echo 'ce message s\'affichera en cas d\'échec'
-        }
-    }
- 
 }
